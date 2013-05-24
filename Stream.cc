@@ -17,7 +17,7 @@
 
 // user include files
 #include "Stream.h"
-
+#include "Run.h"
 
 //
 // constants, enums and typedefs
@@ -40,9 +40,9 @@ m_id(iID),m_state(kInitialized),m_runTransitionID(0),m_run(0)
 //    // do actual copying here;
 // }
 
-Stream::~Stream()
-{
-}
+//Stream::~Stream()
+//{
+//}
 
 void 
 Stream::processBeginRun(Run const* iRun) {

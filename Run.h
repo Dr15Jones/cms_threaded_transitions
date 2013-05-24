@@ -28,7 +28,6 @@
 class Run {
 public:
    Run(unsigned int iCacheID):m_number(0),m_transitionID(0),m_cacheID(iCacheID) {}
-   m_number(iNumber),m_transitionID(iTransitionID) {}
    unsigned int number() const {return m_number;}
    unsigned int transitionID() const {return m_transitionID;}
    unsigned int cacheID() const {return m_cacheID;}

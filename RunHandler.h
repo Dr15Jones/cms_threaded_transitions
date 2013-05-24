@@ -24,13 +24,19 @@
 #include <vector>
 #include <memory>
 // user include files
+#include "Run.h"
+#include "WaitingTaskList.h"
 
 // forward declarations
 class Coordinator;
+class Stream;
+class Source;
 
 class RunHandler{
    public:
-      RunHandler(unsigned in iNRuns, Coordinator*);
+      explicit RunHandler(unsigned int iNRuns);
+
+      void setCoordinator(Coordinator*);
 
       tbb::task* assignToARun(Stream*);
       tbb::task* assignToRunThenDoEvent(Stream*);
@@ -40,20 +46,21 @@ class RunHandler{
 
       unsigned int presentRunTransitionID() const;
 
-   private:
       void doneWithRun(unsigned int iCacheID);
-      void startNewRun(unsigned int, Source*);
+
+   private:
+      void startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource);
 
       std::vector<Run> m_runs;
       std::vector<std::atomic<tbb::task*>> m_endRunTasks;
-      std::vector<std::shared_ptr<WaitingTaskList>> m_waitingForBeginToFinish;
+      std::vector<std::shared_ptr<edm::WaitingTaskList>> m_waitingForBeginToFinish;
       std::atomic<unsigned int> m_nAvailableRuns;
       std::atomic<bool> m_waitingForAvailableRun;
-      WaitingTaskList m_tasksWaitingForAvailableRun;
+      edm::WaitingTaskList m_tasksWaitingForAvailableRun;
       Coordinator* m_coordinator;
 
       unsigned int m_presentRunTransitionID;
-      unsigned int m_presentRunCacheID;
+      unsigned int m_presentCacheID;
       unsigned int m_presentRunNumber;
 };
 

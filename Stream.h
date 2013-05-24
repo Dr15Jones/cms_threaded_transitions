@@ -35,7 +35,7 @@ class Run;
  public:
     Stream(unsigned int iID);
 
-    States {kInitialized,kBeginRun,kEvent,kEndRun,kFinished};
+    enum States {kInitialized,kBeginRun,kEvent,kEndRun,kFinished};
 
     void processBeginRun(Run const* iRun);
     void processEvent();

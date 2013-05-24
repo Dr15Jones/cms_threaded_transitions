@@ -29,28 +29,28 @@ class Run;
 
 class Source {
 public:
+   Source(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNEvents);
    enum Transitions {kStop,kRun,kEvent};
 
-   Transitions nextTransition() const;
+   Transitions nextTransition() const {return m_nextTransition;}
 
-   unsigned int nextRunsNumber() const;
-   std::pair<unsigned int, unsigned int> nextEventsNumber() const;
+   unsigned int nextRunsNumber() const {return m_nextRunNumber;}
+   unsigned int nextEventsNumber() const {return m_nextEventNumber;}
 
    void gotoNextEvent(Event&);
    void gotoNextRun(Run&);
+   void sumRunInfo(Run&) {}
 private:
    void finishTransition();
+   
+   Transitions m_nextTransition;
+   unsigned int m_nextRunNumber;
+   unsigned int m_nextEventNumber;
+   unsigned int m_nEventsSeen;
+   
+   const unsigned int m_nRuns;
+   const unsigned int m_nEventsPerRun;
+   const unsigned int m_nEvents;
 };
-
-void Source::gotoNextEvent(Event& iEvent) {
- iEvent->setNumber(nextEventsNumber());
- finishTransition();
-}
-
-void Source::gotoNextRun(Run& iRun) {
- iRun->setNumber(nextRunsNumber());
- finishTransition();
-}
-
 
 #endif

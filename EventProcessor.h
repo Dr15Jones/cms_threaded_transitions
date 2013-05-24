@@ -24,12 +24,17 @@
 // user include files
 
 // forward declarations
+class Source;
 
 class EventProcessor {
    public:
-      EventProcessor(Source* iSource, unsigned int iNStreams);
+      EventProcessor(Source* iSource, unsigned int iNStreams, unsigned int iNRuns);
 
       void processAll();
+   private:
+      Source* m_source;
+      unsigned int m_nStreams;
+      unsigned int m_nRuns;
 };
 
 

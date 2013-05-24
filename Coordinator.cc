@@ -18,6 +18,7 @@
 #include "Coordinator.h"
 #include "RunHandler.h"
 #include "Stream.h"
+#include "Source.h"
 
 //
 // constants, enums and typedefs
@@ -30,9 +31,13 @@
 //
 // constructors and destructor
 //
-Coordinator::Coordinator():
+Coordinator::Coordinator(tbb::task* iEndTask, Source* iSource, RunHandler& iRunHandler):
+m_waitingTask(iEndTask),
+m_source(iSource),
+m_runHandler(iRunHandler),
 m_lastTransitionGotten(false)
 {
+   m_runHandler.setCoordinator(this);
 }
 
 // Coordinator::Coordinator(const Coordinator& rhs)
@@ -40,9 +45,9 @@ m_lastTransitionGotten(false)
 //    // do actual copying here;
 // }
 
-Coordinator::~Coordinator()
-{
-}
+//Coordinator::~Coordinator()
+//{
+//}
 
 tbb::task* 
 Coordinator::assignWorkTo(Stream* iStream) {
@@ -51,7 +56,7 @@ Coordinator::assignWorkTo(Stream* iStream) {
 
 class StreamEndStreamTask : public tbb::task {
   public:
-     StreamEndRunTask(Stream* iStream, tbb::task* iDoneTask):
+     StreamEndStreamTask(Stream* iStream, tbb::task* iDoneTask):
      m_stream(iStream), m_doneTask(iDoneTask) {}
      
      tbb::task* execute() {
@@ -90,7 +95,7 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
       }
       if(Stream::kEndRun == iStream->state()) {
          //Launch end stream task
-         auto* task{new (tbb::task::allocate_root()) StreamEndStreamTask(iStream,m_doneTask)};
+         tbb::task* task{new (tbb::task::allocate_root()) StreamEndStreamTask(iStream,m_waitingTask)};
          return task;
       }
    }
@@ -108,11 +113,11 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
 
    if(Stream::kEndRun==iStream->state() or Stream::kInitialized ==iStream->state()) {
       if(nextTran == Source::kRun) {
-         return m_runHandler.assignToRun(iStream);
+         return m_runHandler.assignToARun(iStream);
       }
       if(nextTran == Source::kEvent) {
          //pull the event
-         m_source->getNextEvent(iStream->event());
+         m_source->gotoNextEvent(iStream->event());
          return m_runHandler.assignToRunThenDoEvent(iStream);
       }
    }
@@ -125,8 +130,8 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
    
    if(nextTran == Source::kEvent) {
       //process the event
-      m_source->getNextEvent(iStream->event());
-      auto* task{new (tbb::task::allocate_root()) StreamEventTask(iStream,this)};
+      m_source->gotoNextEvent(iStream->event());
+      tbb::task* task{new (tbb::task::allocate_root()) StreamEventTask(iStream,this)};
       return task;
    }
 }
