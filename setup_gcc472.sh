@@ -1,0 +1,3 @@
+export PATH=/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/external/gcc/4.7.2-cms/bin:/Users/cdj/src/cms/software/FWLiteVersions/common:/Users/cdj/src/cms/software/FWLiteVersions/bin:/Library/Frameworks/Python.framework/Versions/2.6/bin:/opt/local/bin:/opt/local/sbin:/Library/Frameworks/Python.framework/Versions/Current/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/X11/bin
+export DYLD_FALLBACK_LIBRARY_PATH=/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/cms/cmssw/CMSSW_6_2_0_pre5/external/osx108_amd64_gcc472/lib:/usr/X11R6/lib
+export DYLD_LIBRARY_PATH=/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/external/llvm/3.2-cms/lib:/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/external/gcc/4.7.2-cms/lib
