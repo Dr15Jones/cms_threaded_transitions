@@ -20,8 +20,8 @@ TBB_LIB := $(TBB_LIB_PATH) -ltbb
 BOOST_LIB := $(BOOST_LIB_PATH) -lboost_thread
 CXX=g++
 CPPFLAGS=$(TBB_INCLUDES) $(BOOST_INCLUDES) $(CPPUNIT_INCLUDES) 
-CXXFLAGS=-O3 -g -std=c++0x -fPIC -pthread $(CXXOTHERFLAGS)
-#CXXFLAGS=-g -std=c++0x -fPIC -pthread
+#CXXFLAGS=-O3 -g -std=c++0x -fPIC -pthread $(CXXOTHERFLAGS)
+CXXFLAGS=-O0 -g -std=c++0x -fPIC -pthread $(CXXOTHERFLAGS)
 LDFLAGS= -std=c++0x -pthread
 LINKER=g++
 
