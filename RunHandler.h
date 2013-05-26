@@ -47,7 +47,7 @@ class RunHandler{
       unsigned int presentRunTransitionID() const;
 
       void doneWithRun(unsigned int iCacheID);
-
+      void beginHasFinished(unsigned int iCacheID);
    private:
       void startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource);
 

@@ -1,6 +1,7 @@
 #include "EventProcessor.h"
 #include "Source.h"
 #include <memory>
+#include <iostream>
 
 #include "tbb/task_scheduler_init.h"
 
@@ -14,6 +15,8 @@ int main() {
    
    EventProcessor ep(&s, nThreads, nSimultaneousRuns);
    ep.processAll();
+   
+   std::cerr <<"Process finished";
    
    return 0;
 }

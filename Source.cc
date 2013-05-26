@@ -12,6 +12,7 @@
 //
 
 // system include files
+#include <iostream>
 
 // user include files
 #include "Source.h"
@@ -87,11 +88,14 @@ Source::finishTransition()
 
 
 void Source::gotoNextEvent(Event& iEvent) {
+   std::cout <<"Event "<<nextRunsNumber()<<" "<<nextEventsNumber()<<std::endl;
  iEvent.setNumber( {nextRunsNumber(),nextEventsNumber()});
  finishTransition();
 }
 
 void Source::gotoNextRun(Run& iRun) {
+   std::cout <<"Run "<<nextRunsNumber()<<std::endl;
+   
  iRun.set(nextRunsNumber(),0);
  finishTransition();
 }

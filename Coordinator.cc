@@ -12,6 +12,7 @@
 //
 
 // system include files
+#include <cassert>
 #include "tbb/task.h"
 
 // user include files
@@ -51,7 +52,13 @@ m_lastTransitionGotten(false)
 
 tbb::task* 
 Coordinator::assignWorkTo(Stream* iStream) {
-   return m_queue.pushAndGetNextTaskToRun([iStream,this](){ this->doAssignWorkTo_(iStream);});
+   return m_queue.pushAndGetNextTaskToRun([iStream,this](){ 
+      auto p = this->doAssignWorkTo_(iStream);
+      if(p) {
+         tbb::task::spawn(*p);
+         }
+      }
+      );
 }
 
 class StreamEndStreamTask : public tbb::task {
@@ -134,5 +141,8 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
       tbb::task* task{new (tbb::task::allocate_root()) StreamEventTask(iStream,this)};
       return task;
    }
+   
+   assert(false);
+   return nullptr;
 }
 

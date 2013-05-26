@@ -21,6 +21,7 @@
 #include "Coordinator.h"
 #include "Stream.h"
 #include "Source.h"
+#include "WaitingTaskList.h"
 
 
 //
@@ -79,8 +80,17 @@ namespace {
    };
    class GlobalBeginRunTask : public tbb::task {
    public:
-      GlobalBeginRunTask(RunHandler*, unsigned int iCacheID);
-      tbb::task* execute();
+      GlobalBeginRunTask(RunHandler* iHandler, unsigned int iCacheID) :
+      m_handler(iHandler),
+      m_cacheID(iCacheID) {}
+      
+      tbb::task* execute() {
+         //Call to globalBeginRun would be done here
+         m_handler->beginHasFinished(m_cacheID);
+      }
+   private:
+      RunHandler* m_handler;
+      unsigned int m_cacheID;
    };
    
    class GlobalEndRunTask : public tbb::task {
@@ -102,8 +112,8 @@ namespace {
    
    class StartNewRunTask : public tbb::task {
    public:
-      StartNewRunTask(RunHandler*,unsigned int iNewRunsNumber,Source*);
-      tbb::task* execute();
+      StartNewRunTask(RunHandler*,unsigned int iNewRunsNumber,Source*) {}
+      tbb::task* execute() {}
       
    };
 }
@@ -113,9 +123,19 @@ namespace {
 // constructors and destructor
 //
 RunHandler::RunHandler(unsigned int iMaxNRuns):
-m_presentRunTransitionID(1),m_presentCacheID(std::numeric_limits<unsigned int>::max()),m_presentRunNumber(0),m_coordinator(nullptr)
+m_nAvailableRuns(iMaxNRuns),m_presentRunTransitionID(1),m_presentCacheID(std::numeric_limits<unsigned int>::max()),m_presentRunNumber(0),
+m_waitingForAvailableRun(false),
+m_coordinator(nullptr),
+m_endRunTasks(iMaxNRuns)
 {
    //presize everything
+   m_runs.reserve(iMaxNRuns);
+   m_waitingForBeginToFinish.reserve(iMaxNRuns);
+   for(unsigned int i = 0; i<iMaxNRuns; ++i) {
+      m_runs.emplace_back(i);
+      m_endRunTasks[i].store(nullptr);
+      m_waitingForBeginToFinish.push_back(std::shared_ptr<edm::WaitingTaskList>(new edm::WaitingTaskList));
+   }
 }
 
 // RunHandler::RunHandler(const RunHandler& rhs)
@@ -135,10 +155,12 @@ RunHandler::setCoordinator(Coordinator* iCoord) {
 
 tbb::task* 
 RunHandler::assignToARun(Stream* iStream) {
+   assert(m_presentCacheID < m_endRunTasks.size());
    m_endRunTasks[m_presentCacheID].load()->increment_ref_count();
    tbb::task* task{new (tbb::task::allocate_root()) StreamBeginRunTask(iStream,m_coordinator,&(m_runs[m_presentCacheID]))};
    
    //NOTE: would be nice to know if global beginrun was already called so we could just return the new task
+   assert(m_presentCacheID < m_waitingForBeginToFinish.size());
    m_waitingForBeginToFinish[m_presentCacheID]->add(task);
    
    return nullptr;
@@ -146,10 +168,12 @@ RunHandler::assignToARun(Stream* iStream) {
 
 tbb::task* 
 RunHandler::assignToRunThenDoEvent(Stream* iStream) {
+   assert(m_presentCacheID < m_endRunTasks.size());
    m_endRunTasks[m_presentCacheID].load()->increment_ref_count();
    tbb::task* task{new (tbb::task::allocate_root()) StreamBeginRunThenEventTask(iStream,m_coordinator,&(m_runs[m_presentCacheID]))};
    
    //NOTE: would be nice to know if global beginrun was already called so we could just return the new task
+   assert(m_presentCacheID < m_waitingForBeginToFinish.size());
    m_waitingForBeginToFinish[m_presentCacheID]->add(task);
    
    return nullptr;   
@@ -157,6 +181,7 @@ RunHandler::assignToRunThenDoEvent(Stream* iStream) {
 tbb::task* 
 RunHandler::prepareToRemoveFromRun(Stream* iStream) {
    auto cacheID = iStream->run()->cacheID();
+   assert(cacheID < m_endRunTasks.size());
    tbb::task* endTask = m_endRunTasks[cacheID];
    assert(nullptr != endTask);
    
@@ -178,6 +203,7 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
       do {
          keepSumming=false;
          //the following should be put into a task and run asynchronously
+         assert(m_presentCacheID<m_runs.size());
          iSource->sumRunInfo(m_runs[m_presentCacheID]);
          
          auto trans = iSource->nextTransition();
@@ -188,6 +214,7 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
    
    //previous run is now allowed to handle endRun
    if(m_presentCacheID != std::numeric_limits<unsigned int>::max()) {
+      assert(m_presentCacheID < m_endRunTasks.size());
       m_endRunTasks[m_presentCacheID].load()->decrement_ref_count();
       m_presentCacheID = std::numeric_limits<unsigned int>::max();
    }
@@ -222,9 +249,21 @@ RunHandler::presentRunTransitionID() const {
    return m_presentRunTransitionID;
 }
 
+void 
+RunHandler::beginHasFinished(unsigned int iCacheID)
+{
+   assert(iCacheID < m_waitingForBeginToFinish.size());
+   assert(nullptr != m_waitingForBeginToFinish[iCacheID].get());
+   
+   m_waitingForBeginToFinish[iCacheID]->doneWaiting();
+}
+
+
 //NOTE: startNewRun method must only be called from Coordinator's queue
 void 
 RunHandler::startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource) {
+   assert(iCacheID < m_endRunTasks.size());
+   
    assert(m_endRunTasks[iCacheID].load()==nullptr);
    tbb::task* task{new (tbb::task::allocate_root()) GlobalEndRunTask(this,iCacheID)};
    task->increment_ref_count();
@@ -235,13 +274,14 @@ RunHandler::startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* 
    m_runs[iCacheID].set(iRunNumber,m_presentRunTransitionID);
    iSource->gotoNextRun(m_runs[iCacheID]);
 
-   m_waitingForBeginToFinish[iCacheID].reset();
+   m_waitingForBeginToFinish[iCacheID]->reset();
    tbb::task* t{new (tbb::task::allocate_root()) GlobalBeginRunTask(this,iCacheID)};
    tbb::task::spawn(*t);
 }
 
 void 
 RunHandler::doneWithRun(unsigned int iCacheID) {
+   assert(iCacheID < m_endRunTasks.size());
    m_endRunTasks[iCacheID].store(nullptr);
    ++m_nAvailableRuns;
    bool expected = true;

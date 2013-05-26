@@ -36,7 +36,6 @@ class Coordinator {
    public:
       Coordinator(tbb::task* iWaitingTask, Source*, RunHandler&);
       tbb::task* assignWorkTo(Stream*);
-      void start(tbb::task* iWaitingTask);
    private:
       tbb::task* doAssignWorkTo_(Stream* iStream);
       edm::SerialTaskQueue m_queue;
