@@ -71,6 +71,7 @@ Source::finishTransition()
    if(kRun == m_nextTransition) {
       m_nextTransition = kEvent;
       ++m_nextEventNumber;
+      return;
    }
    if(kEvent == m_nextTransition) {
       ++m_nEventsSeen;
