@@ -90,6 +90,16 @@ class StreamEventTask : public tbb::task {
      unsigned int m_number;
 };
 
+static
+tbb::task* doRunTaskFirstIfNotNull(tbb::task* iOne, tbb::task* iTwo) {
+   if (nullptr == iOne) {
+      return iTwo;
+   }
+   if(nullptr!=iTwo) {
+      tbb::task::spawn(*iTwo);
+   }
+   return iOne;
+}
 
 tbb::task* 
 Coordinator::doAssignWorkTo_(Stream* iStream) {
@@ -106,13 +116,16 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
          return task;
       }
    }
-
+   
+   //If we have a task to finish up for the run (e.g. summing run products), we want that to run before starting
+   // a task for the Stream. This can be done by pushing the Stream task onto the 'spawn' queue first
+   tbb::task* runTask = nullptr;
    if(nextTran == Source::kRun) {
       //RunHandler knows if this run has already been 'pulled' or if we are waiting
       // for a resource to become available
       // When a resource becomes available RunHandler puts a 'pull' task onto the Coordinator's queue
       //If we get the same Run we just 'pulled' then we pull this
-      m_runHandler.newRun(m_source->nextRunsNumber(),m_source);
+      runTask = m_runHandler.newRun(m_source->nextRunsNumber(),m_source);
    }
 
    //RunHandler is allowed to 'pull' the transition from the source
@@ -120,18 +133,18 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
 
    if(Stream::kEndRun==iStream->state() or Stream::kInitialized ==iStream->state()) {
       if(nextTran == Source::kRun) {
-         return m_runHandler.assignToARun(iStream);
+         return doRunTaskFirstIfNotNull(runTask,m_runHandler.assignToARun(iStream));
       }
       if(nextTran == Source::kEvent) {
          //pull the event
          m_source->gotoNextEvent(iStream->event());
-         return m_runHandler.assignToRunThenDoEvent(iStream);
+         return doRunTaskFirstIfNotNull(runTask,m_runHandler.assignToRunThenDoEvent(iStream));
       }
    }
    
    if( m_runHandler.presentRunTransitionID() != iStream->runTransitionID()) {
       //need to do endRun
-      return m_runHandler.prepareToRemoveFromRun(iStream);
+      return doRunTaskFirstIfNotNull(runTask,m_runHandler.prepareToRemoveFromRun(iStream));
    }
 
    
@@ -139,10 +152,10 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
       //process the event
       m_source->gotoNextEvent(iStream->event());
       tbb::task* task{new (tbb::task::allocate_root()) StreamEventTask(iStream,this)};
-      return task;
+      return doRunTaskFirstIfNotNull(runTask,task);
    }
    
    assert(false);
-   return nullptr;
+   return runTask;
 }
 

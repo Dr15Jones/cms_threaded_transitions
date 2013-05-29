@@ -123,7 +123,11 @@ namespace {
 // constructors and destructor
 //
 RunHandler::RunHandler(unsigned int iMaxNRuns):
-m_nAvailableRuns(iMaxNRuns),m_presentRunTransitionID(1),m_presentCacheID(std::numeric_limits<unsigned int>::max()),m_presentRunNumber(0),
+m_nAvailableRuns(iMaxNRuns),
+m_runSumQueues(iMaxNRuns),
+m_presentRunTransitionID(1),
+m_presentCacheID(std::numeric_limits<unsigned int>::max()),
+m_presentRunNumber(0),
 m_waitingForAvailableRun(false),
 m_coordinator(nullptr),
 m_endRunTasks(iMaxNRuns)
@@ -188,14 +192,15 @@ RunHandler::prepareToRemoveFromRun(Stream* iStream) {
    return (new (tbb::task::allocate_root()) StreamEndRunTask(iStream,m_coordinator,endTask));
 }
 
-void 
+tbb::task* 
 RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
    //this is an inadequate test. We need to know if the previous call to newRun has resulted in the
    // run to be 'pulled' or if we are just recalling the same value
    // Coordinator should keep track of that stuff!!
    if(m_waitingForAvailableRun) {
-      return;
+      return nullptr;
    }
+   tbb::task* returnValue = nullptr;
    if(iNewRunsNumber == m_presentRunNumber) {
       //NOTE: should check to see if this is the same run and if we've already pulled this run 
       // then this indicates a 'reduction' step should be done
@@ -203,13 +208,30 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
       do {
          keepSumming=false;
          //the following should be put into a task and run asynchronously
+         // We should have a 'summing' queue for each Run whis is where the 
+         // summing tasks are put.
+         // It should also be 'dependent' on the Run so we will not run the 
+         // global end run until all summing has finished.
          assert(m_presentCacheID<m_runs.size());
-         iSource->sumRunInfo(m_runs[m_presentCacheID]);
+         auto& run = m_runs[m_presentCacheID];
+         auto id = iSource->nextRunFragmentIdentifier();
+         iSource->gotoNextRun(run);
+         tbb::task* doneTask = m_endRunTasks[m_presentCacheID];
+         doneTask->increment_ref_count();
          
+         auto t = [&run,iSource,id,doneTask] () {
+            iSource->sumRunInfo(run,id);
+            doneTask->decrement_ref_count();
+         };
+         if( nullptr == returnValue ) {
+            returnValue = m_runSumQueues[m_presentCacheID].pushAndGetNextTaskToRun(t);
+         } else {
+            m_runSumQueues[m_presentCacheID].push(t);
+         }
          auto trans = iSource->nextTransition();
-         keepSumming = ((trans == Source::kRun ) and (iNewRunsNumber==iSource->nextRunsNumber()));
+         keepSumming = ((trans == Source::kRun) and (iNewRunsNumber==iSource->nextRunsNumber()));
       }while(keepSumming);
-      return;
+      return returnValue;
    }
    
    //previous run is now allowed to handle endRun
@@ -242,6 +264,7 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
       
       m_tasksWaitingForAvailableRun.add(new (tbb::task::allocate_root()) StartNewRunTask(this,iNewRunsNumber,iSource));
    }
+   return nullptr;
 }
 
 unsigned int 

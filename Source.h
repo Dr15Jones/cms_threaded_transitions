@@ -29,6 +29,8 @@ class Run;
 
 class Source {
 public:
+   typedef unsigned int RunFragmentIdentifier;
+   
    Source(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNEvents);
    enum Transitions {kStop,kRun,kEvent};
 
@@ -37,9 +39,15 @@ public:
    unsigned int nextRunsNumber() const {return m_nextRunNumber;}
    unsigned int nextEventsNumber() const {return m_nextEventNumber;}
 
+   //Since parts of a run can be broken up this value uniquely
+   // identifies a particular fragment of a Run to be summed
+   // this value is Source implementation defined and will be
+   // passed back to the Source duing the 'sumRunInfo' call
+   RunFragmentIdentifier nextRunFragmentIdentifier() const {return 0;}
+
    void gotoNextEvent(Event&);
    void gotoNextRun(Run&);
-   void sumRunInfo(Run&) {}
+   void sumRunInfo(Run&, RunFragmentIdentifier) {}
 private:
    void finishTransition();
    

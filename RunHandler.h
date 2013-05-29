@@ -26,6 +26,7 @@
 // user include files
 #include "Run.h"
 #include "WaitingTaskList.h"
+#include "SerialTaskQueue.h"
 
 // forward declarations
 class Coordinator;
@@ -42,7 +43,7 @@ class RunHandler{
       tbb::task* assignToRunThenDoEvent(Stream*);
       tbb::task* prepareToRemoveFromRun(Stream*);
 
-      void newRun(unsigned int, Source*);
+      tbb::task* newRun(unsigned int, Source*);
 
       unsigned int presentRunTransitionID() const;
 
@@ -54,6 +55,7 @@ class RunHandler{
       std::vector<Run> m_runs;
       std::vector<std::atomic<tbb::task*>> m_endRunTasks;
       std::vector<std::shared_ptr<edm::WaitingTaskList>> m_waitingForBeginToFinish;
+      std::vector<edm::SerialTaskQueue> m_runSumQueues;
       std::atomic<unsigned int> m_nAvailableRuns;
       std::atomic<bool> m_waitingForAvailableRun;
       edm::WaitingTaskList m_tasksWaitingForAvailableRun;
