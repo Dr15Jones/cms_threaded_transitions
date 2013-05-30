@@ -15,7 +15,7 @@
 #include <iostream>
 
 // user include files
-#include "Source.h"
+#include "TestSource.h"
 #include "Event.h"
 #include "Run.h"
 
@@ -30,7 +30,7 @@
 //
 // constructors and destructor
 //
-Source::Source(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNEvents):
+TestSource::TestSource(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNEvents):
 m_nextTransition{iNEvents==0? kStop: kRun},
 m_nextRunNumber{1},
 m_nextEventNumber{0},
@@ -41,22 +41,22 @@ m_nEvents{iNEvents}
 {
 }
 
-// Source::Source(const Source& rhs)
+// TestSource::TestSource(const TestSource& rhs)
 // {
 //    // do actual copying here;
 // }
 
-//Source::~Source()
+//TestSource::~TestSource()
 //{
 //}
 
 //
 // assignment operators
 //
-// const Source& Source::operator=(const Source& rhs)
+// const TestSource& TestSource::operator=(const TestSource& rhs)
 // {
 //   //An exception safe implementation is
-//   Source temp(rhs);
+//   TestSource temp(rhs);
 //   swap(rhs);
 //
 //   return *this;
@@ -66,7 +66,7 @@ m_nEvents{iNEvents}
 // member functions
 //
 void 
-Source::finishTransition()
+TestSource::finishTransition()
 {
    if(kRun == m_nextTransition) {
       m_nextTransition = kEvent;
@@ -88,17 +88,15 @@ Source::finishTransition()
 }
 
 
-void Source::gotoNextEvent(Event& iEvent) {
+void TestSource::gotoNextEvent(Event& iEvent) {
    std::cout <<"Event "<<nextRunsNumber()<<" "<<nextEventsNumber()<<std::endl;
  iEvent.setNumber( {nextRunsNumber(),nextEventsNumber()});
  finishTransition();
 }
 
-void Source::gotoNextRun(Run& iRun) {
+void TestSource::gotoNextRun(Run& iRun) {
    std::cout <<"Run "<<nextRunsNumber()<<std::endl;
-   
- iRun.set(nextRunsNumber(),0);
- finishTransition();
+   finishTransition();
 }
 
 //

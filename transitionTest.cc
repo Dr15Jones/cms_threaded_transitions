@@ -1,5 +1,5 @@
 #include "EventProcessor.h"
-#include "Source.h"
+#include "TestSource.h"
 #include <memory>
 #include <iostream>
 
@@ -7,16 +7,18 @@
 
 
 int main() {
+   //const unsigned int nThreads = 1;
    const unsigned int nThreads = 4;
-   const unsigned int nSimultaneousRuns = 1;
+   //const unsigned int nSimultaneousRuns = 1;
+   const unsigned int nSimultaneousRuns = 2;
    std::unique_ptr<tbb::task_scheduler_init> tsi{new tbb::task_scheduler_init(nThreads)};
    
-   Source s{1,100,10};
+   TestSource s{1,10,20};
    
    EventProcessor ep(&s, nThreads, nSimultaneousRuns);
    ep.processAll();
    
-   std::cerr <<"Process finished";
+   std::cerr <<"Process finished\n";
    
    return 0;
 }

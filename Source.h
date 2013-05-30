@@ -31,34 +31,24 @@ class Source {
 public:
    typedef unsigned int RunFragmentIdentifier;
    
-   Source(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNEvents);
+   Source() {}
+   virtual ~Source() {}
    enum Transitions {kStop,kRun,kEvent};
 
-   Transitions nextTransition() const {return m_nextTransition;}
+   virtual Transitions nextTransition() const = 0;
 
-   unsigned int nextRunsNumber() const {return m_nextRunNumber;}
-   unsigned int nextEventsNumber() const {return m_nextEventNumber;}
+   virtual unsigned int nextRunsNumber() const = 0;
+   virtual unsigned int nextEventsNumber() const  = 0;
 
    //Since parts of a run can be broken up this value uniquely
    // identifies a particular fragment of a Run to be summed
    // this value is Source implementation defined and will be
    // passed back to the Source duing the 'sumRunInfo' call
-   RunFragmentIdentifier nextRunFragmentIdentifier() const {return 0;}
+   virtual RunFragmentIdentifier nextRunFragmentIdentifier() const = 0;
 
-   void gotoNextEvent(Event&);
-   void gotoNextRun(Run&);
-   void sumRunInfo(Run&, RunFragmentIdentifier) {}
-private:
-   void finishTransition();
-   
-   Transitions m_nextTransition;
-   unsigned int m_nextRunNumber;
-   unsigned int m_nextEventNumber;
-   unsigned int m_nEventsSeen;
-   
-   const unsigned int m_nRuns;
-   const unsigned int m_nEventsPerRun;
-   const unsigned int m_nEvents;
+   virtual void gotoNextEvent(Event&) = 0;
+   virtual void gotoNextRun(Run&) = 0;
+   virtual void sumRunInfo(Run&, RunFragmentIdentifier) = 0;
 };
 
 #endif
