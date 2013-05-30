@@ -32,8 +32,9 @@
 //
 // constructors and destructor
 //
-EventProcessor::EventProcessor(Source* iSource, unsigned int iNStreams, unsigned int iNRuns):
+EventProcessor::EventProcessor(Source* iSource, GlobalWatcher* iWatcher, unsigned int iNStreams, unsigned int iNRuns):
 m_source(iSource),
+m_watcher(iWatcher),
 m_nStreams(iNStreams),
 m_nRuns(iNRuns)
 {
@@ -72,12 +73,12 @@ EventProcessor::processAll()
    std::vector<std::shared_ptr<Stream>> streams;
    streams.reserve(m_nStreams);
    
-   RunHandler runHandler(m_nRuns);
+   RunHandler runHandler(m_nRuns,m_watcher);
    
    Coordinator coordinator(eventLoopWaitTask,m_source,runHandler);
    
    for(unsigned int i=0; i<m_nStreams;++i) {
-      std::shared_ptr<Stream> p{ new Stream{i}};
+      std::shared_ptr<Stream> p{ new Stream{i,m_watcher}};
       streams.push_back(p);
       eventLoopWaitTask->increment_ref_count();
       auto t = coordinator.assignWorkTo(p.get());

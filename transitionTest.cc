@@ -1,5 +1,6 @@
 #include "EventProcessor.h"
 #include "TestSource.h"
+#include "GlobalWatcher.h"
 #include <memory>
 #include <iostream>
 #include <cassert>
@@ -33,7 +34,8 @@ int main(int argc, char * const argv[]) {
                                     sourceParams.get<unsigned int>("nEvents")));
    }
 
-   EventProcessor ep(pSource.get(), nStreams, nSimultaneousRuns);
+   GlobalWatcher gw;
+   EventProcessor ep(pSource.get(), &gw,nStreams, nSimultaneousRuns);
    ep.processAll();
    
    std::cerr <<"Process finished\n";

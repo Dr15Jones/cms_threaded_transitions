@@ -30,10 +30,11 @@ namespace tbb {
 }
 
 class Run;
+class GlobalWatcher;
 
  class Stream {
  public:
-    Stream(unsigned int iID);
+    Stream(unsigned int iID, GlobalWatcher*);
 
     enum States {kInitialized,kBeginRun,kEvent,kEndRun,kFinished};
 
@@ -61,6 +62,7 @@ class Run;
     unsigned int m_runTransitionID;
     Run const* m_run;
     Event m_event;
+    GlobalWatcher* m_watcher;
  };
 
 

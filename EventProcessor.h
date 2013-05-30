@@ -25,14 +25,16 @@
 
 // forward declarations
 class Source;
+class GlobalWatcher;
 
 class EventProcessor {
    public:
-      EventProcessor(Source* iSource, unsigned int iNStreams, unsigned int iNRuns);
+      EventProcessor(Source* iSource, GlobalWatcher* iWatcher, unsigned int iNStreams, unsigned int iNRuns);
 
       void processAll();
    private:
       Source* m_source;
+      GlobalWatcher* m_watcher;
       unsigned int m_nStreams;
       unsigned int m_nRuns;
 };

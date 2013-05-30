@@ -122,13 +122,14 @@ namespace {
 //
 // constructors and destructor
 //
-RunHandler::RunHandler(unsigned int iMaxNRuns):
+RunHandler::RunHandler(unsigned int iMaxNRuns, GlobalWatcher* iWatcher):
 m_nAvailableRuns(iMaxNRuns),
 m_runSumQueues(iMaxNRuns),
 m_presentRunTransitionID(1),
 m_presentCacheID(std::numeric_limits<unsigned int>::max()),
 m_presentRunNumber(0),
 m_waitingForAvailableRun(false),
+m_watcher(iWatcher),
 m_coordinator(nullptr),
 m_endRunTasks(iMaxNRuns)
 {

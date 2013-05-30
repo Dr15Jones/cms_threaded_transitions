@@ -32,10 +32,11 @@
 class Coordinator;
 class Stream;
 class Source;
+class GlobalWatcher;
 
 class RunHandler{
    public:
-      explicit RunHandler(unsigned int iNRuns);
+      explicit RunHandler(unsigned int iNRuns, GlobalWatcher* iWatcher);
 
       void setCoordinator(Coordinator*);
 
@@ -59,6 +60,7 @@ class RunHandler{
       std::atomic<unsigned int> m_nAvailableRuns;
       std::atomic<bool> m_waitingForAvailableRun;
       edm::WaitingTaskList m_tasksWaitingForAvailableRun;
+      GlobalWatcher* m_watcher;
       Coordinator* m_coordinator;
 
       unsigned int m_presentRunTransitionID;
