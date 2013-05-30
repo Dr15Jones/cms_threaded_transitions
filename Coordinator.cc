@@ -126,10 +126,11 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
       // When a resource becomes available RunHandler puts a 'pull' task onto the Coordinator's queue
       //If we get the same Run we just 'pulled' then we pull this
       runTask = m_runHandler.newRun(m_source->nextRunsNumber(),m_source);
+
+      //RunHandler is allowed to 'pull' the transition from the source
+      nextTran = m_source->nextTransition();
    }
 
-   //RunHandler is allowed to 'pull' the transition from the source
-   nextTran = m_source->nextTransition();
 
    if(Stream::kEndRun==iStream->state() or Stream::kInitialized ==iStream->state()) {
       if(nextTran == Source::kRun) {
