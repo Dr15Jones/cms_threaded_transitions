@@ -1,6 +1,6 @@
 #Change this to point to your boost installation
-BOOST_INCLUDES := -I/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/external/boost/1.50.0-cms4/include
-BOOST_LIB_PATH := -L/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/external/boost/1.50.0-cms4/lib
+BOOST_INCLUDES := -I/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/external/boost/1.51.0-cms4/include
+BOOST_LIB_PATH := -L/Users/cdj/src/cms/software/FWLiteVersions/osx108_amd64_gcc472/external/boost/1.51.0-cms4/lib
 #BOOST_INCLUDES := -I$(BOOST_INC)
 CXXOTHERFLAGS :=
 UNAME:=$(shell uname -s)
