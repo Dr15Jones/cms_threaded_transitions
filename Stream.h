@@ -40,10 +40,7 @@ class GlobalWatcher;
 
     void processBeginRun(Run const* iRun);
     void processEvent();
-    //will decrement iDoneTask and if reach 0 will spawn it
-    // this allows global end run to be called once all streams
-    // are done with a 
-    void processEndRun(tbb::task* iDoneTask);
+    void processEndRun();
     void processEndStream(tbb::task* iDoneTask);
 
     States state() const { return m_state;}

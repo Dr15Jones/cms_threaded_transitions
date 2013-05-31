@@ -62,13 +62,9 @@ Stream::processEvent() {
 // this allows global end run to be called once all streams
 // are done with a 
 void 
-Stream::processEndRun(tbb::task* iDoneTask) {
+Stream::processEndRun() {
    m_state=kEndRun;
    m_watcher->streamEndRun(m_id,*m_run);
-   
-   if(0==iDoneTask->decrement_ref_count()) {
-      tbb::task::spawn(*iDoneTask);
-   }
 }
 
 void 
