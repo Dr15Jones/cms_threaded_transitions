@@ -18,6 +18,7 @@
 #include "TestSource.h"
 #include "Event.h"
 #include "Run.h"
+#include "writeLock.h"
 
 //
 // constants, enums and typedefs
@@ -89,13 +90,17 @@ TestSource::finishTransition()
 
 
 void TestSource::gotoNextEvent(Event& iEvent) {
-   std::cout <<"Event "<<nextRunsNumber()<<" "<<nextEventsNumber()<<std::endl;
- iEvent.setNumber( {nextRunsNumber(),nextEventsNumber()});
- finishTransition();
+   writeLock([&](){
+      std::cout <<"Event "<<nextRunsNumber()<<" "<<nextEventsNumber()<<std::endl;
+      });
+   iEvent.setNumber( {nextRunsNumber(),nextEventsNumber()});
+   finishTransition();
 }
 
 void TestSource::gotoNextRun(Run& iRun) {
-   std::cout <<"Run "<<nextRunsNumber()<<std::endl;
+   writeLock([&](){
+      std::cout <<"Run "<<nextRunsNumber()<<std::endl;
+      });
    finishTransition();
 }
 
