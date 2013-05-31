@@ -38,6 +38,7 @@ int main(int argc, char * const argv[]) {
    EventProcessor ep(pSource.get(), &gw,nStreams, nSimultaneousRuns);
    ep.processAll();
    
+   assert(gw.nEventsSeen() == sourceParams.get<unsigned int>("nEvents"));
    std::cerr <<"Process finished\n";
 
 }
