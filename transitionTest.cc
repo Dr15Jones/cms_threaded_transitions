@@ -33,39 +33,19 @@ int main(int argc, char * const argv[]) {
                                     sourceParams.get<unsigned int>("nEventsPerRun"),
                                     sourceParams.get<unsigned int>("nEvents")));
    }
+   assert(0!=pSource.get());
 
    GlobalWatcher gw;
    EventProcessor ep(pSource.get(), &gw,nStreams, nSimultaneousRuns);
    ep.processAll();
    
    assert(gw.nEventsSeen() == sourceParams.get<unsigned int>("nEvents"));
+   
+   assert(gw.nBeginRunsSeen() == gw.nEndRunsSeen());
+   assert(gw.nBeginRunsSeen() == sourceParams.get<unsigned int>("nRuns"));
+   assert(gw.nBeginStreamsSeen() == gw.nEndStreamsSeen());
+   assert(gw.nBeginStreamsSeen() == nStreams);
+   
    std::cerr <<"Process finished\n";
 
 }
-/*
-int main() {
-   //const unsigned int nThreads = 1;
-   const unsigned int nThreads = 4;
-   //const unsigned int nSimultaneousRuns = 1;
-   const unsigned int nSimultaneousRuns = 2;
-   std::unique_ptr<tbb::task_scheduler_init> tsi{new tbb::task_scheduler_init(nThreads)};
-   
-   TestSource s{1,10,20};
-   
-   EventProcessor ep(&s, nThreads, nSimultaneousRuns);
-   ep.processAll();
-   
-   std::cerr <<"Process finished\n";
-   
-   return 0;
-}
-
-*/
-
-
-
-
-
-
-
-
