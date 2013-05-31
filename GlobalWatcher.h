@@ -20,6 +20,7 @@
 //
 
 // system include files
+#include <atomic>
 
 // user include files
 
@@ -44,6 +45,7 @@ class GlobalWatcher
       void streamEndRun(unsigned int, Run const&) const;
       void endStream(unsigned int) const;
       
+      unsigned int nEventsSeen() const { return m_nEventsSeen.load();}
       // ---------- static member functions --------------------
 
       // ---------- member functions ---------------------------
@@ -54,6 +56,10 @@ class GlobalWatcher
       const GlobalWatcher& operator=(const GlobalWatcher&) = delete; // stop default
 
       // ---------- member data --------------------------------
+      mutable std::atomic<unsigned int> m_simultaneousEvents{0};
+      mutable std::atomic<unsigned int> m_simultaneousBeginRuns{0};
+      mutable std::atomic<unsigned int> m_simultaneousEndRuns{0};
+      mutable std::atomic<unsigned int> m_nEventsSeen{0};
 
 };
 

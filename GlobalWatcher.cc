@@ -23,9 +23,6 @@
 //
 // constants, enums and typedefs
 //
-static std::atomic<unsigned int> s_simultaneousEvents{0};
-static std::atomic<unsigned int> s_simultaneousBeginRuns{0};
-static std::atomic<unsigned int> s_simultaneousEndRuns{0};
 
 //
 // static data member definitions
@@ -79,26 +76,27 @@ GlobalWatcher::beginStream(unsigned int) const
 void 
 GlobalWatcher::streamBeginRun(unsigned int, Run const&) const
 {
-   unsigned int n = ++s_simultaneousBeginRuns;
+   unsigned int n = ++m_simultaneousBeginRuns;
    printf("#streamBeginRuns %u\n",n);
    usleep(100);
-   --s_simultaneousBeginRuns;
+   --m_simultaneousBeginRuns;
 }
 void 
 GlobalWatcher::event(unsigned int, Event const&) const
 {
-   unsigned int n = ++s_simultaneousEvents;
+   ++m_nEventsSeen;
+   unsigned int n = ++m_simultaneousEvents;
    printf("#events %u\n",n);
    usleep(1000);
-   --s_simultaneousEvents;
+   --m_simultaneousEvents;
 }
 void 
 GlobalWatcher::streamEndRun(unsigned int, Run const&) const
 {
-   unsigned int n = ++s_simultaneousEndRuns;
+   unsigned int n = ++m_simultaneousEndRuns;
    printf("#streamEndRuns %u\n",n);
    usleep(100);
-   --s_simultaneousEndRuns;
+   --m_simultaneousEndRuns;
 }
 void 
 GlobalWatcher::endStream(unsigned int) const
