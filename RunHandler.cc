@@ -15,6 +15,7 @@
 #include <limits>
 #include <tbb/task.h>
 #include <cassert>
+#include <iostream>
 
 // user include files
 #include "RunHandler.h"
@@ -22,7 +23,8 @@
 #include "Stream.h"
 #include "Source.h"
 #include "WaitingTaskList.h"
-
+#include "GlobalWatcher.h"
+#include "writeLock.h"
 
 //
 // constants, enums and typedefs
@@ -70,8 +72,22 @@ namespace {
         m_stream(iStream), m_coord(iCoord), m_doneTask(iDoneTask) {}
 
         tbb::task* execute() {
-           m_stream->processEndRun(m_doneTask);
-           return m_coord->assignWorkTo(m_stream);
+           m_stream->processEndRun();
+           auto newStreamTask = m_coord->assignWorkTo(m_stream);
+           auto v = m_doneTask->decrement_ref_count() ;
+           /*writeLock([&]() {
+              std::cout <<" decrementing "<<m_doneTask<<" "<<v<<std::endl;
+              });*/
+            
+           if( 0 == v ) {
+              //we want the end of run task to happen before the stream
+              // task starts
+              if(nullptr!=newStreamTask) {
+                 tbb::task::spawn(*newStreamTask);
+              }
+              return m_doneTask;
+           }
+           return newStreamTask;
         }
      private:
         Stream* m_stream;
@@ -86,6 +102,7 @@ namespace {
       
       tbb::task* execute() {
          //Call to globalBeginRun would be done here
+         m_handler->doBeginRunProcessing(m_cacheID);
          m_handler->beginHasFinished(m_cacheID);
       }
    private:
@@ -96,23 +113,33 @@ namespace {
    class GlobalEndRunTask : public tbb::task {
    public:
       //NOTE: in reality, this would need access to the list of modules that want global transitions
-      GlobalEndRunTask(RunHandler* iHandler, unsigned int iCacheID):
+      GlobalEndRunTask(RunHandler* iHandler, unsigned int iCacheID,tbb::task* iDoneWithRunTask):
       m_handler(iHandler),
-      m_cacheID(iCacheID) {}
+      m_doneTask(iDoneWithRunTask),
+      m_cacheID(iCacheID) {
+         assert(0!=iHandler);
+         assert(0!=m_doneTask);
+      }
 
       tbb::task* execute() {
          //Call go globalEndRun would be done here
+         m_handler->doEndRunProcessing(m_cacheID);
          m_handler->doneWithRun(m_cacheID);
-         return nullptr;
+         tbb::task* returnValue = nullptr;
+         if( 0 == m_doneTask->decrement_ref_count()) {
+            returnValue = m_doneTask;
+         }
+         return returnValue;
       }
    private:
       RunHandler* m_handler;
+      tbb::task* m_doneTask;
       unsigned int m_cacheID;
    };
    
    class StartNewRunTask : public tbb::task {
    public:
-      StartNewRunTask(RunHandler*,unsigned int iNewRunsNumber,Source*) {}
+      StartNewRunTask(RunHandler*,unsigned int iNewRunsNumber,Source*, tbb::task* iDoneWithRunTask) {}
       tbb::task* execute() {}
       
    };
@@ -161,6 +188,9 @@ RunHandler::setCoordinator(Coordinator* iCoord) {
 tbb::task* 
 RunHandler::assignToARun(Stream* iStream) {
    assert(m_presentCacheID < m_endRunTasks.size());
+   /*writeLock([&]() {
+      std::cout <<" incrementing "<<m_endRunTasks[m_presentCacheID].load()<<" "<<m_presentCacheID<<std::endl;
+      });*/
    m_endRunTasks[m_presentCacheID].load()->increment_ref_count();
    tbb::task* task{new (tbb::task::allocate_root()) StreamBeginRunTask(iStream,m_coordinator,&(m_runs[m_presentCacheID]))};
    
@@ -174,6 +204,9 @@ RunHandler::assignToARun(Stream* iStream) {
 tbb::task* 
 RunHandler::assignToRunThenDoEvent(Stream* iStream) {
    assert(m_presentCacheID < m_endRunTasks.size());
+   /*writeLock([&]() {
+      std::cout <<" incrementing "<<m_endRunTasks[m_presentCacheID].load()<<" "<<m_presentCacheID<<std::endl;
+      });*/
    m_endRunTasks[m_presentCacheID].load()->increment_ref_count();
    tbb::task* task{new (tbb::task::allocate_root()) StreamBeginRunThenEventTask(iStream,m_coordinator,&(m_runs[m_presentCacheID]))};
    
@@ -188,13 +221,16 @@ RunHandler::prepareToRemoveFromRun(Stream* iStream) {
    auto cacheID = iStream->run()->cacheID();
    assert(cacheID < m_endRunTasks.size());
    tbb::task* endTask = m_endRunTasks[cacheID];
+   /*writeLock([&]() {
+      std::cout <<"prepareToRemoveFromRun "<<cacheID<<" "<<iStream->id()<<std::endl;
+      });*/
    assert(nullptr != endTask);
    
    return (new (tbb::task::allocate_root()) StreamEndRunTask(iStream,m_coordinator,endTask));
 }
 
 tbb::task* 
-RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
+RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource, tbb::task* iDoneWithRunTask) {
    //this is an inadequate test. We need to know if the previous call to newRun has resulted in the
    // run to be 'pulled' or if we are just recalling the same value
    // Coordinator should keep track of that stuff!!
@@ -207,6 +243,9 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
       // then this indicates a 'reduction' step should be done
       bool keepSumming=true;
       do {
+         writeLock([&]() {
+            std::cout <<"doing summing"<<std::endl;
+            });
          keepSumming=false;
          //the following should be put into a task and run asynchronously
          // We should have a 'summing' queue for each Run whis is where the 
@@ -238,7 +277,10 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
    //previous run is now allowed to handle endRun
    if(m_presentCacheID != std::numeric_limits<unsigned int>::max()) {
       assert(m_presentCacheID < m_endRunTasks.size());
-      m_endRunTasks[m_presentCacheID].load()->decrement_ref_count();
+      auto v = m_endRunTasks[m_presentCacheID].load()->decrement_ref_count();
+      /*writeLock([&]() {
+         std::cout <<"decrementing "<<m_presentCacheID<<" "<<m_endRunTasks[m_presentCacheID].load()<<" count "<<v<<std::endl;
+         });*/
       m_presentCacheID = std::numeric_limits<unsigned int>::max();
    }
    
@@ -256,16 +298,28 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource) {
          ++openRun;
       }
       assert(openRun != m_endRunTasks.size());
-      startNewRun(iNewRunsNumber,openRun,iSource);
+      startNewRun(iNewRunsNumber,openRun,iSource, iDoneWithRunTask);
    } else {
       //The bool works as a synchronization barries since reset
       // can not be called simultaneously with any other method of WaitingTaskList
       m_tasksWaitingForAvailableRun.reset();
       m_waitingForAvailableRun.store(true);
       
-      m_tasksWaitingForAvailableRun.add(new (tbb::task::allocate_root()) StartNewRunTask(this,iNewRunsNumber,iSource));
+      m_tasksWaitingForAvailableRun.add(new (tbb::task::allocate_root()) StartNewRunTask(this,iNewRunsNumber,iSource,iDoneWithRunTask));
    }
    return nullptr;
+}
+
+void
+RunHandler::doneProcessing() {
+   if(m_presentCacheID != std::numeric_limits<unsigned int>::max()) {
+      assert(m_presentCacheID < m_endRunTasks.size());
+      auto v = m_endRunTasks[m_presentCacheID].load()->decrement_ref_count();
+      /*writeLock([&]() {
+         std::cout <<"decrementing "<<m_presentCacheID<<" "<<m_endRunTasks[m_presentCacheID].load()<<" count "<<v<<std::endl;
+         });*/
+      m_presentCacheID = std::numeric_limits<unsigned int>::max();
+   }
 }
 
 unsigned int 
@@ -285,11 +339,15 @@ RunHandler::beginHasFinished(unsigned int iCacheID)
 
 //NOTE: startNewRun method must only be called from Coordinator's queue
 void 
-RunHandler::startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource) {
+RunHandler::startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource,tbb::task* iDoneWithRunTask) {
    assert(iCacheID < m_endRunTasks.size());
    
    assert(m_endRunTasks[iCacheID].load()==nullptr);
-   tbb::task* task{new (tbb::task::allocate_root()) GlobalEndRunTask(this,iCacheID)};
+   iDoneWithRunTask->increment_ref_count();
+   tbb::task* task{new (tbb::task::allocate_root()) GlobalEndRunTask(this,iCacheID,iDoneWithRunTask)};
+   /*writeLock([&]() {
+      std::cout <<" made and incremented "<<task<<" id "<<iCacheID<<std::endl;
+      });*/
    task->increment_ref_count();
    m_endRunTasks[iCacheID].store(task);
    --m_nAvailableRuns;
@@ -314,6 +372,16 @@ RunHandler::doneWithRun(unsigned int iCacheID) {
    }
 }
 
+void
+RunHandler::doBeginRunProcessing(unsigned int iCacheID) const{
+   assert(iCacheID < m_runs.size());
+   m_watcher->globalBeginRun(m_runs[iCacheID]);
+}
 
+void
+RunHandler::doEndRunProcessing(unsigned int iCacheID) const{
+   assert(iCacheID < m_runs.size());
+   m_watcher->globalEndRun(m_runs[iCacheID]);
+}
 
 

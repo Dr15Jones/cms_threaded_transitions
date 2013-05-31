@@ -44,14 +44,21 @@ class RunHandler{
       tbb::task* assignToRunThenDoEvent(Stream*);
       tbb::task* prepareToRemoveFromRun(Stream*);
 
-      tbb::task* newRun(unsigned int, Source*);
+      tbb::task* newRun(unsigned int, Source*, tbb::task* iDoneWithRunTask);
 
       unsigned int presentRunTransitionID() const;
 
       void doneWithRun(unsigned int iCacheID);
       void beginHasFinished(unsigned int iCacheID);
+      
+      void doneProcessing();
+
+      //these can be called asynchronously since they just 
+      // pass the appropriate Run the the GlobalWatcher
+      void doBeginRunProcessing(unsigned int iCacheID) const;
+      void doEndRunProcessing(unsigned int iCacheID) const;
    private:
-      void startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource);
+      void startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource, tbb::task* iDoneWithRunTask);
 
       std::vector<Run> m_runs;
       std::vector<std::atomic<tbb::task*>> m_endRunTasks;
