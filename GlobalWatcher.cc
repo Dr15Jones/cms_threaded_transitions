@@ -18,6 +18,8 @@
 
 // user include files
 #include "GlobalWatcher.h"
+#include "Run.h"
+#include "writeLock.h"
 
 
 //
@@ -65,42 +67,59 @@ GlobalWatcher::GlobalWatcher()
 //
 void 
 GlobalWatcher::globalBeginRun(Run const&) const
-{}
+{
+   ++m_nBeginRunsSeen;
+}
 void 
-GlobalWatcher::globalEndRun(Run const&) const
-{}
+GlobalWatcher::globalEndRun(Run const& iRun) const
+{
+   writeLock([&](){
+      printf("globalEndRun %u\n",iRun.number());
+      });
+   ++m_nEndRunsSeen;
+}
 
 void 
 GlobalWatcher::beginStream(unsigned int) const
-{}
+{
+   ++m_nBeginStreamsSeen;
+}
 void 
-GlobalWatcher::streamBeginRun(unsigned int, Run const&) const
+GlobalWatcher::streamBeginRun(unsigned int iStreamID, Run const&) const
 {
    unsigned int n = ++m_simultaneousBeginRuns;
-   printf("#streamBeginRuns %u\n",n);
+   writeLock([&](){
+      printf("#streamBeginRuns %u stream:%u\n",n,iStreamID);
+      });
    usleep(100);
    --m_simultaneousBeginRuns;
 }
 void 
-GlobalWatcher::event(unsigned int, Event const&) const
+GlobalWatcher::event(unsigned int iStreamID, Event const&) const
 {
    ++m_nEventsSeen;
    unsigned int n = ++m_simultaneousEvents;
-   printf("#events %u\n",n);
+   writeLock([&](){
+      printf("#events %u stream:%u\n",n,iStreamID);
+      });
    usleep(1000);
    --m_simultaneousEvents;
 }
 void 
-GlobalWatcher::streamEndRun(unsigned int, Run const&) const
+GlobalWatcher::streamEndRun(unsigned int iStreamID, Run const&) const
 {
    unsigned int n = ++m_simultaneousEndRuns;
-   printf("#streamEndRuns %u\n",n);
+   writeLock([&](){
+      printf("#streamEndRuns %u stream:%u\n",n,iStreamID);
+      });
    usleep(100);
    --m_simultaneousEndRuns;
 }
 void 
 GlobalWatcher::endStream(unsigned int) const
-{}
+{
+   ++m_nEndStreamsSeen;
+}
 
 //
 // static member functions

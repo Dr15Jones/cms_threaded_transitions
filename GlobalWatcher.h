@@ -46,6 +46,10 @@ class GlobalWatcher
       void endStream(unsigned int) const;
       
       unsigned int nEventsSeen() const { return m_nEventsSeen.load();}
+      unsigned int nBeginRunsSeen() const { return m_nBeginRunsSeen.load();}
+      unsigned int nEndRunsSeen() const { return m_nEndRunsSeen.load();}
+      unsigned int nBeginStreamsSeen() const { return m_nBeginStreamsSeen.load();}
+      unsigned int nEndStreamsSeen() const { return m_nEndStreamsSeen.load();}
       // ---------- static member functions --------------------
 
       // ---------- member functions ---------------------------
@@ -60,6 +64,10 @@ class GlobalWatcher
       mutable std::atomic<unsigned int> m_simultaneousBeginRuns{0};
       mutable std::atomic<unsigned int> m_simultaneousEndRuns{0};
       mutable std::atomic<unsigned int> m_nEventsSeen{0};
+      mutable std::atomic<unsigned int> m_nBeginRunsSeen{0};
+      mutable std::atomic<unsigned int> m_nEndRunsSeen{0};
+      mutable std::atomic<unsigned int> m_nBeginStreamsSeen{0};
+      mutable std::atomic<unsigned int> m_nEndStreamsSeen{0};
 
 };
 
