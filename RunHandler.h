@@ -58,7 +58,7 @@ class RunHandler{
       void doBeginRunProcessing(unsigned int iCacheID) const;
       void doEndRunProcessing(unsigned int iCacheID) const;
    private:
-      void startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource, tbb::task* iDoneWithRunTask);
+      tbb::task* startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource, tbb::task* iDoneWithRunTask);
 
       std::vector<Run> m_runs;
       std::vector<std::atomic<tbb::task*>> m_endRunTasks;

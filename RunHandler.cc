@@ -187,6 +187,9 @@ RunHandler::setCoordinator(Coordinator* iCoord) {
 
 tbb::task* 
 RunHandler::assignToARun(Stream* iStream) {
+   writeLock([&](){
+      std::cout<<"assignToARun "<<iStream->id()<<std::endl;
+      });
    assert(m_presentCacheID < m_endRunTasks.size());
    /*writeLock([&]() {
       std::cout <<" incrementing "<<m_endRunTasks[m_presentCacheID].load()<<" "<<m_presentCacheID<<std::endl;
@@ -278,9 +281,9 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource, tbb::task* iDon
    if(m_presentCacheID != std::numeric_limits<unsigned int>::max()) {
       assert(m_presentCacheID < m_endRunTasks.size());
       auto v = m_endRunTasks[m_presentCacheID].load()->decrement_ref_count();
-      /*writeLock([&]() {
+      writeLock([&]() {
          std::cout <<"decrementing "<<m_presentCacheID<<" "<<m_endRunTasks[m_presentCacheID].load()<<" count "<<v<<std::endl;
-         });*/
+         });
       m_presentCacheID = std::numeric_limits<unsigned int>::max();
    }
    
@@ -298,7 +301,7 @@ RunHandler::newRun(unsigned int iNewRunsNumber, Source* iSource, tbb::task* iDon
          ++openRun;
       }
       assert(openRun != m_endRunTasks.size());
-      startNewRun(iNewRunsNumber,openRun,iSource, iDoneWithRunTask);
+      return startNewRun(iNewRunsNumber,openRun,iSource, iDoneWithRunTask);
    } else {
       //The bool works as a synchronization barries since reset
       // can not be called simultaneously with any other method of WaitingTaskList
@@ -338,7 +341,7 @@ RunHandler::beginHasFinished(unsigned int iCacheID)
 
 
 //NOTE: startNewRun method must only be called from Coordinator's queue
-void 
+tbb::task* 
 RunHandler::startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource,tbb::task* iDoneWithRunTask) {
    assert(iCacheID < m_endRunTasks.size());
    
@@ -358,7 +361,7 @@ RunHandler::startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* 
 
    m_waitingForBeginToFinish[iCacheID]->reset();
    tbb::task* t{new (tbb::task::allocate_root()) GlobalBeginRunTask(this,iCacheID)};
-   tbb::task::spawn(*t);
+   return t;
 }
 
 void 
