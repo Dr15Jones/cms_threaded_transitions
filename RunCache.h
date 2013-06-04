@@ -43,7 +43,7 @@ class RunCache{
 
       ///Returns nullptr if no available run slot
       /// This must be called serially
-      Run* newRun();
+      Run* getARun();
       void waitForAnAvailableRun(tbb::task*);
 
       //this can be called asynchronously

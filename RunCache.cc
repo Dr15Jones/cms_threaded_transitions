@@ -60,7 +60,7 @@ m_runAvailable(iMaxNRuns)
 //{
 //}
 Run*
-RunCache::newRun()
+RunCache::getARun()
 {
    //It is possible that last time newRun was called, doneWithRun was called
    // at the same time and it just so happened

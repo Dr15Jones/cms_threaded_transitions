@@ -450,7 +450,7 @@ Coordinator::newRun(unsigned int iNewRunsNumber) {
    //Id moves here because after this call we might check to see if a waiting Stream uses this ID
    ++m_presentRunTransitionID;
    
-   Run* newRun = m_runHandler.newRun();
+   Run* newRun = m_runHandler.getARun();
    
    //do we have an available run slot?
    if(0!=newRun) {
