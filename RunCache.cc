@@ -95,8 +95,12 @@ RunCache::newRun()
       if( 0 == --m_nAvailableRuns) {
          //THIS ISN'T SAFE: we could be in the middle of calling 'doneWaiting' when the reset is called
          //this needs to be synchronized.
+         
          m_tasksWaitingForAvailableRun.reset();
-         m_waitingForAvailableRun == true;
+         m_waitingForAvailableRun = true;
+         writeLock([&]() {
+               std::cout <<"newRun: waiting"<<std::endl;
+               });
       }
       return &m_runs[openRun];
    }
@@ -105,6 +109,9 @@ RunCache::newRun()
 
 void 
 RunCache::waitForAnAvailableRun(tbb::task* iTask) {
+   writeLock([&]() {
+         std::cout <<" task waiting for available run"<<std::endl;
+         });
    m_tasksWaitingForAvailableRun.add(iTask);
 }
 
@@ -118,6 +125,9 @@ RunCache::doneWithRun(unsigned int iCacheID) {
    
    m_runAvailable[iCacheID].store(true);
    unsigned int nAvailable = ++m_nAvailableRuns;
+   writeLock([&]() {
+         std::cout <<"doneWithRun: # now available "<<nAvailable<<" waiting "<<m_waitingForAvailableRun.load()<<std::endl;
+         });
    if(true == m_waitingForAvailableRun.load()) {
       //NOTE: it is safe to call doneWaiting from multiple threads
       m_tasksWaitingForAvailableRun.doneWaiting();
