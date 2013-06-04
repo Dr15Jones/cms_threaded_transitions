@@ -31,14 +31,15 @@
 //
 // constructors and destructor
 //
-TestSource::TestSource(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNEvents):
-m_nextTransition{iNEvents==0? kStop: kRun},
+TestSource::TestSource(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNTransitions):
+m_nextTransition{iNTransitions==0? kStop: kRun},
 m_nextRunNumber{1},
 m_nextEventNumber{0},
-m_nEventsSeen{0},
+m_nTransitionsSeen{0},
 m_nRuns{iNRuns},
 m_nEventsPerRun{iNEventsPerRun},
-m_nEvents{iNEvents}
+m_nEventsSeen{0},
+m_nTransitions{iNTransitions}
 {
 }
 
@@ -69,6 +70,11 @@ m_nEvents{iNEvents}
 void 
 TestSource::finishTransition()
 {
+   ++m_nTransitionsSeen;
+   if(m_nTransitionsSeen == m_nTransitions) {
+      m_nextTransition = kStop;
+      return;
+   }
    if(kRun == m_nextTransition) {
       m_nextTransition = kEvent;
       ++m_nextEventNumber;
@@ -76,10 +82,7 @@ TestSource::finishTransition()
    }
    if(kEvent == m_nextTransition) {
       ++m_nEventsSeen;
-      if(m_nEventsSeen == m_nEvents) {
-         m_nextTransition = kStop;
-      }
-      else if(m_nEventsSeen % m_nEventsPerRun == 0) {
+      if(m_nEventsSeen % m_nEventsPerRun == 0) {
          m_nextTransition = kRun;
          ++m_nextRunNumber;
       } else {

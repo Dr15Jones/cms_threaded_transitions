@@ -31,7 +31,7 @@ class Run;
 class TestSource : public Source {
 public:
    
-   TestSource(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNEvents);
+   TestSource(unsigned int iNRuns, unsigned int iNEventsPerRun, unsigned int iNTransitions);
 
    Transitions nextTransition() const override {return m_nextTransition;}
 
@@ -54,10 +54,11 @@ private:
    unsigned int m_nextRunNumber;
    unsigned int m_nextEventNumber;
    unsigned int m_nEventsSeen;
+   unsigned int m_nTransitionsSeen;
    
    const unsigned int m_nRuns;
    const unsigned int m_nEventsPerRun;
-   const unsigned int m_nEvents;
+   const unsigned int m_nTransitions;
 };
 
 #endif
