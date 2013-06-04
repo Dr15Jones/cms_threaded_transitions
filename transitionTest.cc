@@ -31,7 +31,7 @@ int main(int argc, char * const argv[]) {
    if(sourceType == "TestSource") {
       pSource.reset( new TestSource(sourceParams.get<unsigned int>("nRuns"),
                                     sourceParams.get<unsigned int>("nEventsPerRun"),
-                                    sourceParams.get<unsigned int>("nEvents")));
+                                    sourceParams.get<unsigned int>("nEvents")+sourceParams.get<unsigned int>("nRuns")));
    }
    assert(0!=pSource.get());
 
