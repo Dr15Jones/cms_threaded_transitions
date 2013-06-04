@@ -165,6 +165,7 @@ m_watcher(iWatcher),
 m_runHandler(iRunCache),
 m_activeRun(nullptr),
 m_waitingForBeginRunToFinish(),
+m_endRunTasks(iRunCache.maxNumberOfConcurrentRuns()),
 m_runSumQueues(iRunCache.maxNumberOfConcurrentRuns()),
 m_presentRunTransitionID(0),
 m_presentRunNumber(0)
@@ -267,6 +268,10 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
 
       if(nullptr == runTask) {
          if(Stream::kEndRun==iStream->state() or Stream::kInitialized ==iStream->state()) {
+            writeLock([&]() {
+               std::cout <<"no available run for stream "<<iStream->id()<<std::endl;
+               });
+            
             m_runHandler.waitForAnAvailableRun(new (tbb::task::allocate_root()) TryLaterTask(iStream,this));
             return nullptr;
          }
