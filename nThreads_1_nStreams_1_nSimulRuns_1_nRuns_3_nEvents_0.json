@@ -1,0 +1,15 @@
+{
+  "process" : {
+    "source" : {
+      "@type" : "TestSource",
+      "nRuns" : 3,
+      "nEventsPerRun": 0,
+      "nEvents":0
+    },
+    "options" : { 
+      "nThreads" : 1,
+      "nStreams" : 1,
+      "nSimultaneousRuns" : 1
+    }
+  }
+}
