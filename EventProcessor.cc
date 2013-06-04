@@ -19,7 +19,7 @@
 #include "EventProcessor.h"
 #include "Stream.h"
 #include "Coordinator.h"
-#include "RunHandler.h"
+#include "RunCache.h"
 
 //
 // constants, enums and typedefs
@@ -73,9 +73,9 @@ EventProcessor::processAll()
    std::vector<std::shared_ptr<Stream>> streams;
    streams.reserve(m_nStreams);
    
-   RunHandler runHandler(m_nRuns,m_watcher);
+   RunCache runHandler(m_nRuns);
    
-   Coordinator coordinator(eventLoopWaitTask,m_source,runHandler);
+   Coordinator coordinator(eventLoopWaitTask,m_source, m_watcher, runHandler);
    
    for(unsigned int i=0; i<m_nStreams;++i) {
       std::shared_ptr<Stream> p{ new Stream{i,m_watcher}};
