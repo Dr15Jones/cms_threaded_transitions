@@ -249,7 +249,7 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
          //need to do endRun
          return prepareToRemoveFromRun(iStream);
       }
-      if(Stream::kEndRun == iStream->state()) {
+      if(Stream::kEndRun == iStream->state() or Stream::kInitialized == iStream->state()) {
          //Launch end stream task
          tbb::task* task{new (tbb::task::allocate_root()) StreamEndStreamTask(iStream,m_waitingTask)};
          return task;
