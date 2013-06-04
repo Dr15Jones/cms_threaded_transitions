@@ -286,7 +286,7 @@ Coordinator::doAssignWorkTo_(Stream* iStream) {
    }
 
    if(Stream::kEndRun==iStream->state() or Stream::kInitialized ==iStream->state()) {
-      if(nextTran == Source::kRun) {
+      if(nextTran == Source::kRun or nextTran == Source::kStop) {
          return doRunTaskFirstIfNotNull(runTask,assignToARun(iStream));
       }
       if(nextTran == Source::kEvent) {

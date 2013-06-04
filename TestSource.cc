@@ -76,8 +76,12 @@ TestSource::finishTransition()
       return;
    }
    if(kRun == m_nextTransition) {
-      m_nextTransition = kEvent;
-      ++m_nextEventNumber;
+      if(m_nEventsPerRun !=0) {
+         m_nextTransition = kEvent;
+         ++m_nextEventNumber;
+      } else {
+         ++m_nextRunNumber;
+      }
       return;
    }
    if(kEvent == m_nextTransition) {
