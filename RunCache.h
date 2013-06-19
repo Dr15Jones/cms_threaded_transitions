@@ -50,8 +50,6 @@ class RunCache{
       void doneWithRun(unsigned int iCacheID);
 
    private:
-      tbb::task* startNewRun(unsigned int iRunNumber, unsigned int iCacheID, Source* iSource, tbb::task* iDoneWithRunTask);
-
       std::vector<Run> m_runs;
       std::vector<std::atomic<bool>> m_runAvailable;
       std::atomic<unsigned int> m_nAvailableRuns;
